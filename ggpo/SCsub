@@ -1,0 +1,4 @@
+Import('env')
+
+env_ggpo = env.Clone()
+env_ggpo.add_source_files(env.modules_sources, "*.cpp");
