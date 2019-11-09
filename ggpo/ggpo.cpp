@@ -142,7 +142,7 @@ int GGPO::getNetworkStats(GGPOPtr ggpo, int pHandle, int& sendQueueLen, int& rec
   auto result = ggpo_get_network_stats((GGPOSession*)ggpo, pHandle, &stats);
   sendQueueLen = stats.network.send_queue_len;
   recvQueueLen = stats.network.recv_queue_len;
-  pint = stats.network.ping;
+  ping = stats.network.ping;
   kbpsSent = stats.network.kbps_sent;
   localFramesBehind = stats.timesync.local_frames_behind;
   remoteFramesBehind = stats.timesync.remote_frames_behind;
