@@ -5,5 +5,5 @@ def configure(env):
     env.Append(CPPPATH=["#modules/ggpo/libpath"])
 
     if env["platform"] == "windows":
-        env.Append(LINKFLAGS=["ggpo.dll"])
+        env.Append(LINKFLAGS=["ggpo.lib"])
         env.Append(LIBPATH=["#modules/ggpo/libpath"])
