@@ -1,15 +1,15 @@
 #include "ggpo.h"
 
 #include <stdio.h>
-#include <ggponet.h>
+#include "libpath/ggpo/src/include/ggponet.h"
 
 #include <string>
 #include <cstdio>
 
-constexpr auto GGPO::PLUGIN_VERSION = "1.0";
-constexpr auto GGPO::PLUGIN_BUILD_NUMBER = 1;
+const char* GGPO::PLUGIN_VERSION = "1.0";
+const int GGPO::PLUGIN_BUILD_NUMBER = 1;
 
-log_func logCallback;
+log_func GGPO::logCallback = NULL;
 
 void callLog(const char* text) {
   if(logCallback)
@@ -53,7 +53,7 @@ int GGPO::startSession(GGPOPtr& sessionRef, begin_game beginGame, advance_frame 
   cb.on_event = onEvent;
 
   GGPOSession* ggpo;
-  auto result = ggpo_start_session(&ggpo, &cb, numPlayers, sizeof(uint64_t), localport);
+  auto result = ggpo_start_session(&ggpo, &cb, game, numPlayers, sizeof(uint64_t), localport);
   sessionRef = (GGPOPtr)ggpo;
   return result;
 }

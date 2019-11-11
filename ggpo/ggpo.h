@@ -1,15 +1,13 @@
 #ifndef GODOT_GGPO_H
 #define GODOT_GGPO_H
 
+#include "core/object.h"
 #include "core/reference.h"
 
-#include <ggponet.h>
+#include "libpath/ggpo/src/include/ggponet.h"
 
-class GGPO : public Reference {
+class GGPO: public Reference {
   GDCLASS(GGPO, Reference);
-
-protected:
-  static void _bind_methods();
 
 public:
   typedef void (*log_func)(const char* text);
@@ -41,6 +39,12 @@ public:
   int advanceFrame(GGPOPtr ggpo);
   void log(GGPOPtr ggpo, const char* text);
   int getNetworkStats(GGPOPtr ggpo, int pHandle, int& sendQueueLen, int& recvQueueLen, int& ping, int& kbpsSent, int& localFramesBehind, int& remoteFramesBehind);
+
+protected:
+  static void _bind_methods();
+  static log_func logCallback;
+  static const char* PLUGIN_VERSION;
+  static const int PLUGIN_BUILD_NUMBER;
 };
 
 #endif
