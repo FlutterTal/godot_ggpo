@@ -1,50 +1,52 @@
 #ifndef GODOT_GGPO_H
 #define GODOT_GGPO_H
 
-#include "core/object.h"
 #include "core/reference.h"
+#include "sdk/include/ggponet.h"
 
-#include "libpath/ggpo/src/include/ggponet.h"
-
-class GGPO: public Reference {
-  GDCLASS(GGPO, Reference);
+class GGPO: public Object {
+  GDCLASS(GGPO, Object);
 
 public:
   typedef void (*log_func)(const char* text);
   typedef bool (*begin_game)(const char* game);
+  typedef bool (*advance_frame_func)(int flags);
+  typedef bool (*load_game_state)(unsigned char* buffer, int length);
+  typedef bool (*log_game_state)(char* text, unsigned char* buffer, int length);
   typedef bool (*save_game_state)(unsigned char** buffer, int* len, int* checksum, int frame);
-  typedef bool (*load_game_state)(unsigned char* buffer, int len);
-  typedef bool (*log_game_state)(char* filename, unsigned char* buffer, int len);
   typedef void (*free_buffer)(void* buffer);
-  typedef bool (*advance_frame)(int flags);
   typedef bool (*on_event)(GGPOEvent* info);
   typedef intptr_t GGPOPtr;
 
+  static GGPO* get_singleton();
+  //static log_func getLog;
+  static log_func logCallback;
   GGPO();
+  ~GGPO();
 
-  const char* pluginVersion();
-  int pluginBuildNumber();
-  void setLog(log_func callback);
-  int startSession(GGPOPtr& sessionRef, begin_game beginGame, advance_frame advanceFrame, load_game_state loadGameState, log_game_state logGameState, save_game_state saveGameState, free_buffer freeBuffer, on_event onEvent, const char* game, int numPlayers, int localport);
-  int startSpectating(GGPOPtr& sessionRef, begin_game beginGame, advance_frame advanceFrame, load_game_state loadGameState, log_game_state logGameState, save_game_state saveGameState, free_buffer freeBuffer, on_event onEvent, const char* game, int numPlayers, int localport, char* hostIp, int hostport);
-  int setDisconnectNotifyStart(GGPOPtr ggpo, int timeout);
-  int setDisconnectTimeout(GGPOPtr ggpo, int timeout);
-  int synchronizeInput(GGPOPtr ggpo, uint64_t* inputs, int length, int& disconnectFlags);
-  int addLocalInput(GGPOPtr ggpo, int localPlayerHandle, uint64_t input);
-  int closeSession(GGPOPtr ggpo);
+  const char* plugin_version();
+  int plugin_build_number();
+  void set_log(log_func callback);
+  int start_session(GGPOPtr& sessionRef, begin_game beginGame, advance_frame_func advanceFrame, load_game_state loadGameState, log_game_state logGameState, save_game_state saveGameState, free_buffer freeBuffer, on_event onEvent, const char* game, int numPlayers, int localPort);
+  int start_spectating(GGPOPtr& sessionRef, begin_game beginGame, advance_frame_func advanceFrame, load_game_state loadGameState, log_game_state logGameState, save_game_state saveGameState, free_buffer freeBuffer, on_event onEvent, const char* game, int numPlayers, int localPort, char* hostIp, int hostPort);
+  int set_disconnect_notify_start(GGPOPtr ggpo, int timeout);
+  int set_disconnect_timeout(GGPOPtr ggpo, int timeout);
+  int synchronize_input(GGPOPtr ggpo, uint64_t* inputs, int length, int& disconnectFlags);
+  int add_local_input(GGPOPtr ggpo, int localPlayerHandle, uint64_t input);
+  int close_session(GGPOPtr ggpo);
   int idle(GGPOPtr ggpo, int timeout);
-  int addPlayer(GGPOPtr ggpo, int playerType, int playerNum, const char* playerIpAddress, unsigned short playerPort, int& pHandle);
-  int disconnectPlayer(GGPOPtr ggpo, int pHandle);
-  int setFrameDelay(GGPOPtr ggpo, int pHandle, int frameDelay);
-  int advanceFrame(GGPOPtr ggpo);
+  int add_player(GGPOPtr ggpo, int playerType, int playerNum, const char* playerIpAddress, unsigned short playerPort, int& pHandle);
+  int disconnect_player(GGPOPtr ggpo, int pHandle);
+  int set_frame_delay(GGPOPtr ggpo, int pHandle, int frameDelay);
+  int advance_frame(GGPOPtr ggpo);
   void log(GGPOPtr ggpo, const char* text);
-  int getNetworkStats(GGPOPtr ggpo, int pHandle, int& sendQueueLen, int& recvQueueLen, int& ping, int& kbpsSent, int& localFramesBehind, int& remoteFramesBehind);
+  int get_network_stats(GGPOPtr ggpo, int pHandle, int& sendQueueLen, int& recvQueueLen, int& ping, int& kbpsSent, int& localFramesBehind, int& remoteFramesBehind);
 
 protected:
   static void _bind_methods();
-  static log_func logCallback;
+  static GGPO* singleton;
   static const char* PLUGIN_VERSION;
-  static const int PLUGIN_BUILD_NUMBER;
+  static const int PLUGIN_BUID_NUMBER;
 };
 
 #endif

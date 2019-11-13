@@ -1,4 +1,8 @@
 Import('env')
 
-env_ggpo = env.Clone()
-env_ggpo.add_source_files(env.modules_sources, "*.cpp");
+module_env = env.Clone()
+
+module_env.add_source_files(env.modules_sources, "*.cpp")
+module_env.add_source_files(env.modules_sources, "sdk/lib/ggpo/*.cpp")
+module_env.add_source_files(env.modules_sources, "sdk/lib/ggpo/backends/*.cpp")
+module_env.add_source_files(env.modules_sources, "sdk/lib/ggpo/network/*.cpp")
