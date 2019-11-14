@@ -2,7 +2,7 @@
 #define GODOT_GGPO_H
 
 #include "core/reference.h"
-#include "sdk/include/ggponet.h"
+#include <ggponet.h>
 
 class GGPO: public Object {
   GDCLASS(GGPO, Object);

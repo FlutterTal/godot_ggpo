@@ -1,5 +1,5 @@
 #include "ggpo.h"
-#include "sdk/include/ggponet.h"
+#include <ggponet.h>
 
 #include "core/method_bind_ext.gen.inc"
 
