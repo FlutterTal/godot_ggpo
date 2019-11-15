@@ -2,6 +2,7 @@
 #define GODOT_GGPO_H
 
 #include "core/reference.h"
+#include "core/object.h"
 #include <ggponet.h>
 
 class GGPO: public Object {
