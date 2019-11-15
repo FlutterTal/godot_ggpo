@@ -1,5 +1,8 @@
+#!/usr/bin/env python
+
 Import('env')
+Import('env_modules')
 
-module_env = env.Clone()
+env_ggpo = env_modules.Clone()
 
-Export('env')
+env_ggpo.add_source_files(env.modules_sources, "*.cpp")
