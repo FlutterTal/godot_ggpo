@@ -1,16 +1,17 @@
-#include "register_types.h"
+#include "register_types"
 #include "core/class_db.h"
-#include "core/engine.h"
-#include "ggpo.h"
+#include "core/globals.h"
 
-static GGPO* GGPOPtr = NULL;
+#include "ggpo.h"
+#include "ggposessionwrapper.h"
+
 
 void register_ggpo_types() {
-  ClassDB::register_class<GGPO>();
-  GGPOPtr = memnew(GGPO);
-  Engine::get_singleton()->add_singleton(Engine::Singleton("GGPO", GGPO::get_singleton()));
+    ClassDB::register_class<GGPO>();
+    ClassDB::register_class<GGPOSessionWrapper>();
+    Globals::get_singleton()->add_singleton(Globals::Singleton("GGPO", GGPO::get_singleton()));
 }
 
 void unregister_ggpo_types() {
-  memdelete(GGPOPtr);
+    GGPO::reset_singleton();
 }
