@@ -16,20 +16,20 @@ public:
 
     const char* plugin_version();
     const int plugin_build_number();
-    void set_log(Ref<GGPOSessionWrapper>& callback);
+    //void set_log(Ref<GGPOSessionWrapper>& callback);
     int start_session(Ref<GGPOSessionWrapper>& sessionRef, const String& game, int numPlayers, int localPort);
-    int start_spectating(Ref<GGPOSessionWrapper>& sessionRef, const String& game, int numPlayers, int localPort, String hostIp, int hostPort);
-    int set_disconnect_notify_start(Ref<GGPOSessionWrapper> ggpo, int timeout);
-    int set_disconnect_timeout(Ref<GGPOSessionWrapper> ggpo, int timeout);
-    int synchronize_input(Ref<GGPOSessionWrapper> ggpo, Variant* inputs, int length, Variant& disconnectFlags);
-    int add_local_input(Ref<GGPOSessionWrapper> ggpo, int localPlayerHandle, Variant input);
-    int close_session(Ref<GGPOSessionWrapper> ggpo);
-    int idle(Ref<GGPOSessionWrapper> ggpo, int timeout);
-    int add_player(Ref<GGPOSessionWrapper> ggpo, int playerType, int playerNum, const String& playerIpAddress, Variant playerPort, Variant& pHandle);
-    int disconnect_player(Ref<GGPOSessionWrapper> ggpo, int pHandle);
-    int set_frame_delay(Ref<GGPOSessionWrapper> ggpo, int pHandle, int frameDelay);
-    int advance_frame(Ref<GGPOSessionWrapper> ggpo);
-    void log(Ref<GGPOSessionWrapper> ggpo, const String& text);
+    int start_spectating(Ref<GGPOSessionWrapper>& sessionRef, const String& game, int numPlayers, int localPort, char* hostIp, int hostPort);
+    int set_disconnect_notify_start(GGPOSession* ggpo, int timeout);
+    int set_disconnect_timeout(GGPOSession* ggpo, int timeout);
+    int synchronize_input(GGPOSession* ggpo, uint64_t* inputs, int length, int disconnectFlags);
+    int add_local_input(GGPOSession* ggpo, int localPlayerHandle, uint64_t input);
+    int close_session(GGPOSession* ggpo);
+    int idle(GGPOSession* ggpo, int timeout);
+    int add_player(GGPOSession* ggpo, int playerType, int playerNum, const String& playerIpAddress, Variant playerPort, GGPOPlayerHandle pHandle);
+    int disconnect_player(GGPOSession* ggpo, int pHandle);
+    int set_frame_delay(GGPOSession* ggpo, int pHandle, int frameDelay);
+    int advance_frame(GGPOSession* ggpo);
+    void log(GGPOSession* ggpo, const char* text);
     Dictionary get_network_stats(Ref<GGPOSessionWrapper>& sessionRef, int pHandle);
 
 protected:

@@ -12,10 +12,11 @@ private:
     GGPOSession* GGPOPtr = NULL;
 
 public:
+/*
     void log(const char* text) {
         emit_signal("log", String(text));
     }
-
+*/
     bool begin_game(const char* game) {
         emit_signal("begin_game", String(game));
     }
@@ -45,7 +46,7 @@ public:
     }
 
     void _bind_methods() {
-        ADD_SIGNAL(MethodInfo("log", PropertyInfo(Variant::STRING, "text")));
+        //ADD_SIGNAL(MethodInfo("log", PropertyInfo(Variant::STRING, "text")));
         ADD_SIGNAL(MethodInfo("begin_game", PropertyInfo(Variant::STRING, "game")));
         ADD_SIGNAL(MethodInfo("advance_frame", PropertyInfo(Variant::INT, "flags")));
         ADD_SIGNAL(MethodInfo("load_game_state", PropertyInfo(Variant::STRING, "buffer"), PropertyInfo(Variant::INT, "length")));
@@ -63,7 +64,7 @@ public:
         GGPOPtr = ggpo;
     }
 
-    static FuncRef logCallback = set_function("log");
+    //static FuncRef logCallback;
 };
 
 #endif
