@@ -6,13 +6,14 @@
 #include "ggposessionwrapper.h"
 #include <ggponet.h>
 
-class GGPO: public Object {
-    GDCLASS(GGPO, Object);
+class GGPO: public GGPOSessionWrapper {
+    GDCLASS(GGPO, GGPOSessionWrapper);
 
 public:
     static GGPO* get_singleton();
     GGPO();
     ~GGPO();
+    void reset_singleton();
 
     const char* plugin_version();
     const int plugin_build_number();

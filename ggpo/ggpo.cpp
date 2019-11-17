@@ -40,6 +40,11 @@ GGPO::~GGPO() {
     singleton = NULL;
 }
 
+void GGPO::reset_singleton() {
+    delete GGPO::singleton;
+    GGPO::singleton = NULL;
+}
+
 const char* GGPO::plugin_version() {
     return GGPO::PLUGIN_VERSION;
 }

@@ -25,16 +25,16 @@ public:
         emit_signal("advance_frame", flags);
     }
 
-    bool load_game_state(String buffer, int length) {
-        emit_signal("load_game_state", String(buffer), length);
+    bool load_game_state(unsigned char* buffer, int length) {
+        emit_signal("load_game_state", buffer, length);
     }
 
-    bool log_game_state(char* text, String buffer, int length) {
-        emit_signal("log_game_state", String(text), String(buffer), length);
+    bool log_game_state(char* text, unsigned char* buffer, int length) {
+        emit_signal("log_game_state", String(text), buffer, length);
     }
 
-    bool save_game_state(PoolStringArray buffer, int* len, int* checksum, int frame) {
-        emit_signal("save_game_state", PoolStringArray(buffer), len, checksum, frame);
+    bool save_game_state(unsigned char** buffer, int* len, int* checksum, int frame) {
+        emit_signal("save_game_state", buffer, len, checksum, frame);
     }
 
     void free_buffer(void* buffer) {
@@ -45,7 +45,7 @@ public:
         emit_signal("on_event", info);
     }
 
-    void _bind_methods() {
+    static void _bind_methods() {
         //ADD_SIGNAL(MethodInfo("log", PropertyInfo(Variant::STRING, "text")));
         ADD_SIGNAL(MethodInfo("begin_game", PropertyInfo(Variant::STRING, "game")));
         ADD_SIGNAL(MethodInfo("advance_frame", PropertyInfo(Variant::INT, "flags")));
