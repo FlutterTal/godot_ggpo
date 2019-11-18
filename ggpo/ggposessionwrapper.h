@@ -3,6 +3,7 @@
 
 #include "core/reference.h"
 #include "core/object.h"
+#include "core/func_ref.h"
 #include <ggponet.h>
 
 class GGPOSessionWrapper: public Object {
@@ -63,8 +64,6 @@ public:
     void set_ggpoptr(GGPOSession* ggpo) {
         GGPOPtr = ggpo;
     }
-
-    //static FuncRef logCallback;
 };
 
 #endif

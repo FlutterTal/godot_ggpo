@@ -1,15 +1,6 @@
 #include "ggpo.h"
 #include <ggponet.h>
 
-#include "core/func_ref.h"
-
-#include <stdio.h>
-#include <vector>
-#include <string>
-#include <memory>
-#include <iostream>
-#include <cstdio>
-
 GGPO* GGPO::singleton = NULL;
 
 const char* GGPO::PLUGIN_VERSION = "1.0";
@@ -62,13 +53,12 @@ int GGPO::start_session(Ref<GGPOSessionWrapper>& sessionRef, const String& game,
     GGPOSessionCallbacks cb;
 
     cb.advance_frame = &sessionRef->advance_frame;
-	cb.load_game_state = &sessionRef->load_game_state;
-	cb.begin_game = &sessionRef->begin_game;
-	cb.save_game_state = &sessionRef->save_game_state;
-	cb.load_game_state = &sessionRef->load_game_state;
-	cb.log_game_state = &sessionRef->log_game_state;
-	cb.free_buffer = &sessionRef->free_buffer;
-	cb.on_event = &sessionRef->on_event;
+    cb.begin_game = &sessionRef->begin_game;
+    cb.save_game_state = &sessionRef->save_game_state;
+    cb.load_game_state = &sessionRef->load_game_state;
+    cb.log_game_state = &sessionRef->log_game_state;
+    cb.free_buffer = &sessionRef->free_buffer;
+    cb.on_event = &sessionRef->on_event;
 
     GGPOSession* ggpo;
     int result = ggpo_start_session(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort);
@@ -81,50 +71,49 @@ int GGPO::start_spectating(Ref<GGPOSessionWrapper>& sessionRef, const String& ga
     GGPOSessionCallbacks cb;
 
     cb.advance_frame = &sessionRef->advance_frame;
-	cb.load_game_state = &sessionRef->load_game_state;
-	cb.begin_game = &sessionRef->begin_game;
-	cb.save_game_state = &sessionRef->save_game_state;
-	cb.load_game_state = &sessionRef->load_game_state;
-	cb.log_game_state = &sessionRef->log_game_state;
-	cb.free_buffer = &sessionRef->free_buffer;
-	cb.on_event = &sessionRef->on_event;
+    cb.begin_game = &sessionRef->begin_game;
+    cb.save_game_state = &sessionRef->save_game_state;
+    cb.load_game_state = &sessionRef->load_game_state;
+    cb.log_game_state = &sessionRef->log_game_state;
+    cb.free_buffer = &sessionRef->free_buffer;
+    cb.on_event = &sessionRef->on_event;
 
     GGPOSession* ggpo;
     int result = ggpo_start_spectating(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort, hostIp, hostPort);
     return result;
 }
 
-int GGPO::set_disconnect_notify_start(GGPOSession* ggpo, int timeout) {
+int GGPO::set_disconnect_notify_start(Ref<GGPOSessionWrapper>& ggpo, int timeout) {
     //callLog("set_disconnect_notify_start");
-    return ggpo_set_disconnect_notify_start(ggpo, timeout);
+    return ggpo_set_disconnect_notify_start(ggpo->get_ggpoptr(), timeout);
 }
 
-int GGPO::set_disconnect_timeout(GGPOSession* ggpo, int timeout) {
+int GGPO::set_disconnect_timeout(Ref<GGPOSessionWrapper>& ggpo, int timeout) {
     //callLog("set_disconnect_timeout");
-    return ggpo_set_disconnect_timeout(ggpo, timeout);
+    return ggpo_set_disconnect_timeout(ggpo->get_ggpoptr(), timeout);
 }
 
-int GGPO::synchronize_input(GGPOSession* ggpo, uint64_t* inputs, int length, int disconnectFlags) {
+int GGPO::synchronize_input(Ref<GGPOSessionWrapper>& ggpo, int inputs, int length, int disconnectFlags) {
     //callLog("synchronize_input");
-    return ggpo_synchronize_input(ggpo, inputs, sizeof(uint64_t) * length, &disconnectFlags);
+    return ggpo_synchronize_input(ggpo->get_ggpoptr(), &inputs, sizeof(uint64_t) * length, &disconnectFlags);
 }
 
-int GGPO::add_local_input(GGPOSession* ggpo, int localPlayerHandle, uint64_t input) {
+int GGPO::add_local_input(Ref<GGPOSessionWrapper>& ggpo, int localPlayerHandle, uint64_t input) {
     //callLog("add_local_input");
-    return ggpo_add_local_input(ggpo, localPlayerHandle, &input, sizeof(uint64_t));
+    return ggpo_add_local_input(ggpo->get_ggpoptr(), localPlayerHandle, &input, sizeof(uint64_t));
 }
 
-int GGPO::close_session(GGPOSession* ggpo) {
+int GGPO::close_session(Ref<GGPOSessionWrapper>& ggpo) {
     //callLog("close_session");
-    return ggpo_close_session(ggpo);
+    return ggpo_close_session(ggpo->get_ggpoptr());
 }
 
-int GGPO::idle(GGPOSession* ggpo, int timeout) {
+int GGPO::idle(Ref<GGPOSessionWrapper>& ggpo, int timeout) {
     //callLog("idle");
-    return ggpo_idle(ggpo, timeout);
+    return ggpo_idle(ggpo->get_ggpoptr(), timeout);
 }
 
-int GGPO::add_player(GGPOSession* ggpo, int playerType, int playerNum, const String& playerIpAddress, Variant playerPort, GGPOPlayerHandle pHandle) {
+int GGPO::add_player(Ref<GGPOSessionWrapper>& ggpo, int playerType, int playerNum, const String& playerIpAddress, Variant playerPort, GGPOPlayerHandle pHandle) {
     //callLogv("add_player - %d %d %s %d", playerType, playerNum, playerIpAddress, playerPort);
     GGPOPlayer player;
 
@@ -134,27 +123,27 @@ int GGPO::add_player(GGPOSession* ggpo, int playerType, int playerNum, const Str
     player.u.remote.ip_address, playerIpAddress;
     player.u.remote.port = playerPort;
 
-    return ggpo_add_player(ggpo, &player, &pHandle);
+    return ggpo_add_player(ggpo->get_ggpoptr(), &player, &pHandle);
 }
 
-int GGPO::disconnect_player(GGPOSession* ggpo, int pHandle) {
+int GGPO::disconnect_player(Ref<GGPOSessionWrapper>& ggpo, int pHandle) {
     //callLog("disconnect_player");
-    return ggpo_disconnect_player(ggpo, pHandle);
+    return ggpo_disconnect_player(ggpo->get_ggpoptr(), pHandle);
 }
 
-int GGPO::set_frame_delay(GGPOSession* ggpo, int pHandle, int frameDelay) {
+int GGPO::set_frame_delay(Ref<GGPOSessionWrapper>& ggpo, int pHandle, int frameDelay) {
     //callLog("set_frame_delay");
-    return ggpo_set_frame_delay(ggpo, pHandle, frameDelay);
+    return ggpo_set_frame_delay(ggpo->get_ggpoptr(), pHandle, frameDelay);
 }
 
-int GGPO::advance_frame(GGPOSession* ggpo) {
+int GGPO::advance_frame(Ref<GGPOSessionWrapper>& ggpo) {
     //callLog("advance_frame");
-    return ggpo_advance_frame(ggpo);
+    return ggpo_advance_frame(ggpo->get_ggpoptr());
 }
 
-void GGPO::log(GGPOSession* ggpo, const char* text) {
+void GGPO::log(Ref<GGPOSessionWrapper>& ggpo, const char* text) {
     //callLogv("log - %s", text);
-    ggpo_log(ggpo, text);
+    ggpo_log(ggpo->get_ggpoptr(), text);
 }
 
 Dictionary GGPO::get_network_stats(Ref<GGPOSessionWrapper>& sessionRef, int pHandle) {
