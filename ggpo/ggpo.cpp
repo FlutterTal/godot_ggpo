@@ -1,6 +1,9 @@
 #include "ggpo.h"
 #include <ggponet.h>
-
+/*
+#include "core/method_bind.h"
+#include "core/method_ptrcall.h"
+*/
 GGPO* GGPO::singleton = NULL;
 
 const char* GGPO::PLUGIN_VERSION = "1.0";
@@ -52,13 +55,13 @@ int GGPO::start_session(Ref<GGPOSessionWrapper>& sessionRef, const String& game,
     //callLogv("start_session - %s %i %i", game.utf8().get_data(), numPlayers, localPort);
     GGPOSessionCallbacks cb;
 
-    cb.advance_frame = &sessionRef->advance_frame;
-    cb.begin_game = &sessionRef->begin_game;
-    cb.save_game_state = &sessionRef->save_game_state;
-    cb.load_game_state = &sessionRef->load_game_state;
-    cb.log_game_state = &sessionRef->log_game_state;
-    cb.free_buffer = &sessionRef->free_buffer;
-    cb.on_event = &sessionRef->on_event;
+    cb.advance_frame = sessionRef->advanceFrame;
+    cb.begin_game = sessionRef->beginGame;
+    cb.save_game_state = sessionRef->saveGameState;
+    cb.load_game_state = sessionRef->loadGameState;
+    cb.log_game_state = sessionRef->logGameState;
+    cb.free_buffer = sessionRef->freeBuffer;
+    cb.on_event = sessionRef->onEvent;
 
     GGPOSession* ggpo;
     int result = ggpo_start_session(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort);
@@ -66,20 +69,22 @@ int GGPO::start_session(Ref<GGPOSessionWrapper>& sessionRef, const String& game,
     return result;
 }
 
-int GGPO::start_spectating(Ref<GGPOSessionWrapper>& sessionRef, const String& game, int numPlayers, int localPort, char* hostIp, int hostPort) {
+int GGPO::start_spectating(Ref<GGPOSessionWrapper>& sessionRef, const String& game, int numPlayers, int localPort, Array host) {
     //callLogv("start_spectating - %s %i %i %s %i", game.utf8().get_data(), numPlayers, localPort, hostIp, hostPort);
     GGPOSessionCallbacks cb;
 
-    cb.advance_frame = &sessionRef->advance_frame;
-    cb.begin_game = &sessionRef->begin_game;
-    cb.save_game_state = &sessionRef->save_game_state;
-    cb.load_game_state = &sessionRef->load_game_state;
-    cb.log_game_state = &sessionRef->log_game_state;
-    cb.free_buffer = &sessionRef->free_buffer;
-    cb.on_event = &sessionRef->on_event;
+    cb.advance_frame = sessionRef->advanceFrame;
+    cb.begin_game = sessionRef->beginGame;
+    cb.save_game_state = sessionRef->saveGameState;
+    cb.load_game_state = sessionRef->loadGameState;
+    cb.log_game_state = sessionRef->logGameState;
+    cb.free_buffer = sessionRef->freeBuffer;
+    cb.on_event = sessionRef->onEvent;
 
     GGPOSession* ggpo;
-    int result = ggpo_start_spectating(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort, hostIp, hostPort);
+    char* hostIp;
+    strcpy_s(hostIp, sizeof(char*), String(host[0]).utf8().get_data());
+    int result = ggpo_start_spectating(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort, hostIp, host[1]);
     return result;
 }
 
@@ -113,13 +118,13 @@ int GGPO::idle(Ref<GGPOSessionWrapper>& ggpo, int timeout) {
     return ggpo_idle(ggpo->get_ggpoptr(), timeout);
 }
 
-int GGPO::add_player(Ref<GGPOSessionWrapper>& ggpo, int playerType, int playerNum, const String& playerIpAddress, Variant playerPort, GGPOPlayerHandle pHandle) {
+int GGPO::add_player(Ref<GGPOSessionWrapper>& ggpo, PoolIntArray playerData, const String& playerIpAddress, Variant playerPort, GGPOPlayerHandle pHandle) {
     //callLogv("add_player - %d %d %s %d", playerType, playerNum, playerIpAddress, playerPort);
     GGPOPlayer player;
 
     player.size = sizeof(GGPOPlayer);
-    player.type = (GGPOPlayerType)playerType;
-    player.player_num = playerNum;
+    player.type = (GGPOPlayerType)playerData[0];
+    player.player_num = playerData[1];
     player.u.remote.ip_address, playerIpAddress;
     player.u.remote.port = playerPort;
 
@@ -146,12 +151,12 @@ void GGPO::log(Ref<GGPOSessionWrapper>& ggpo, const char* text) {
     ggpo_log(ggpo->get_ggpoptr(), text);
 }
 
-Dictionary GGPO::get_network_stats(Ref<GGPOSessionWrapper>& sessionRef, int pHandle) {
+Dictionary GGPO::get_network_stats(Ref<GGPOSessionWrapper>& ggpo, int pHandle) {
     //callLogv("get_network_stats - %i", pHandle);
     GGPONetworkStats stats;
     Dictionary d;
 
-    d["result"] = ggpo_get_network_stats(sessionRef->get_ggpoptr(), pHandle, &stats);
+    d["result"] = ggpo_get_network_stats(ggpo->get_ggpoptr(), pHandle, &stats);
     d["sendQueueLen"] = stats.network.send_queue_len;
     d["recvQueueLen"] = stats.network.recv_queue_len;
     d["ping"] = stats.network.ping;
@@ -163,21 +168,21 @@ Dictionary GGPO::get_network_stats(Ref<GGPOSessionWrapper>& sessionRef, int pHan
 }
 
 void GGPO::_bind_methods() {
-    ClassDB::bind_method("plugin_version", &GGPO::plugin_version);
-    ClassDB::bind_method("plugin_build_number", &GGPO::plugin_build_number);
+    ClassDB::bind_method(D_METHOD("plugin_version"), &GGPO::plugin_version);
+    ClassDB::bind_method(D_METHOD("plugin_build_number"), &GGPO::plugin_build_number);
     //ClassDB::bind_method("set_log", &GGPO::set_log);
-    ClassDB::bind_method("start_session", &GGPO::start_session);
-    ClassDB::bind_method("start_spectating", &GGPO::start_spectating);
-    ClassDB::bind_method("set_disconnect_notify_start", &GGPO::set_disconnect_notify_start);
-    ClassDB::bind_method("set_disconnect_timeout", &GGPO::set_disconnect_timeout);
-    ClassDB::bind_method("synchronize_input", &GGPO::synchronize_input);
-    ClassDB::bind_method("add_local_input", &GGPO::add_local_input);
-    ClassDB::bind_method("close_session", &GGPO::close_session);
-    ClassDB::bind_method("idle", &GGPO::idle);
-    ClassDB::bind_method("add_player", &GGPO::add_player);
-    ClassDB::bind_method("disconnect_player", &GGPO::disconnect_player);
-    ClassDB::bind_method("set_frame_delay", &GGPO::set_frame_delay);
-    ClassDB::bind_method("advance_frame", &GGPO::advance_frame);
-    ClassDB::bind_method("log", &GGPO::log);
-    ClassDB::bind_method("get_network_stats", &GGPO::get_network_stats);
+    ClassDB::bind_method(D_METHOD("start_session", "sessionRef", "game", "numPlayers", "localPort"), &GGPO::start_session);
+    ClassDB::bind_method(D_METHOD("start_spectating", "sessionRef", "game", "numPlayers", "localPort", "host"), &GGPO::start_spectating);
+    ClassDB::bind_method(D_METHOD("set_disconnect_notify_start", "ggpo", "timeout"), &GGPO::set_disconnect_notify_start);
+    ClassDB::bind_method(D_METHOD("set_disconnect_timeout", "ggpo", "timeout"), &GGPO::set_disconnect_timeout);
+    ClassDB::bind_method(D_METHOD("synchronize_input", "ggpo", "inputs", "length", "disconnectFlags"), &GGPO::synchronize_input);
+    ClassDB::bind_method(D_METHOD("add_local_input", "ggpo", "localPlayerHandle", "input"), &GGPO::add_local_input);
+    ClassDB::bind_method(D_METHOD("close_session", "ggpo"), &GGPO::close_session);
+    ClassDB::bind_method(D_METHOD("idle", "ggpo", "timeout"), &GGPO::idle);
+    ClassDB::bind_method(D_METHOD("add_player", "ggpo", "playerData", "playerIpAddress", "playerPort", "pHandle"), &GGPO::add_player);
+    ClassDB::bind_method(D_METHOD("disconnect_player", "ggpo", "pHandle"), &GGPO::disconnect_player);
+    ClassDB::bind_method(D_METHOD("set_frame_delay", "ggpo", "pHandle", "frameDelay"), &GGPO::set_frame_delay);
+    ClassDB::bind_method(D_METHOD("advance_frame", "ggpo"), &GGPO::advance_frame);
+    ClassDB::bind_method(D_METHOD("log", "ggpo", "text"), &GGPO::log);
+    ClassDB::bind_method(D_METHOD("get_network_stats", "ggpo", "pHandle"), &GGPO::get_network_stats);
 }
