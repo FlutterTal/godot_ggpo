@@ -12,7 +12,7 @@ def configure(env):
             else:
                 env.Append(LIBPATH=["#modules/ggpo/sdk/bin/win64"])
         else:
-            env.Append(LIBS=["GGPO"])
+            env.Append(LIBS=["ggpo"])
             if env["bits"] == "32":
                 env.Append(LIBPATH=["#modules/ggpo/sdk/bin/win32"])
             else:

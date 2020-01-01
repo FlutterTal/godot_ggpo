@@ -12,5 +12,5 @@ void register_ggpo_types() {
 }
 
 void unregister_ggpo_types() {
-    memdelete(GGPOPtr);
+    memdelete<GGPO>(GGPOPtr);
 }

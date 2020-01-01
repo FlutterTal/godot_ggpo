@@ -9,6 +9,8 @@
 #include "core/reference.h"
 #include "core/dictionary.h"
 
+#include "callbacks.h"
+
 class GGPO: public Object {
     GDCLASS(GGPO, Object)
 
@@ -24,33 +26,25 @@ public:
     GGPO();
     ~GGPO();
 
-    void start_session(const String &game, int numPlayers, int localPort);
-    void start_spectating(const String &game, int numPlayers, int localPort, const String &hostIp, int hostPort);
+    void start_session(const String& game, int numPlayers, int localPort);
+    void start_spectating(const String& game, int numPlayers, int localPort, const String& hostIp, int hostPort);
     void set_disconnect_notify_start(int timeout);
     void set_disconnect_timeout(int timeout);
     void synchronize_input(int inputs, int length, int disconnectFlags);
     void add_local_input(int localPlayerHandle, uint64_t input);
     void close_session();
     void idle(int timeout);
-    void add_player(int playerType, int playerNum, const String &playerIpAddress, int playerPort, int pHandle);
+    void add_player(int playerType, int playerNum, const String& playerIpAddress, int playerPort, int pHandle);
     void disconnect_player(int pHandle);
     void set_frame_delay(int pHandle, int frameDelay);
     void advance_frame();
-    void log(const String &text);
+    void log(const String& text);
     Dictionary get_network_stats(int pHandle);
-
-    bool beginGame(const char *game);
-    bool advanceFrame(int flags);
-    bool loadGameState(unsigned char *buffer, int length);
-    bool logGameState(char *filename, unsigned char *buffer, int length);
-    bool saveGameState(unsigned char **buffer, int *len, int *checksum, int frame);
-    void freeBuffer(void *buffer);
-    bool onEvent(GGPOEvent *info);
 
     GGPOSession* get_ggpoptr() {
         return GGPOPtr;
     }
-    void set_ggpoptr(GGPOSession *ggpo) {
+    void set_ggpoptr(GGPOSession* ggpo) {
         GGPOPtr = ggpo;
     }
 

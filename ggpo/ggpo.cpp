@@ -5,8 +5,6 @@
 
 GGPO* GGPO::singleton = NULL;
 
-// TODO: Delete those, they will be used directly inside GDScript
-Ref<Reference> gs;
 int player, count, total, frames_ahead, disconnect_timeout;
 
 GGPO::GGPO() {
@@ -21,23 +19,16 @@ GGPO* GGPO::get_singleton() {
     return GGPO::singleton;
 }
 
-/*
- * This is the biggest part of the problem, precisely
- * about defining the library's callback. I'll worry
- * about the start_spectating method once this is
- * corrected.
- */
-void GGPO::start_session(const String &game, int numPlayers, int localPort) {
+void GGPO::start_session(const String& game, int numPlayers, int localPort) {
     GGPOSessionCallbacks cb;
 
-    memset(&cb, 0, sizeof(cb));
-    cb.begin_game = &GGPO::get_singleton()->beginGame;
-    cb.advance_frame = &GGPO::get_singleton()->advanceFrame;
-    cb.load_game_state = &GGPO::get_singleton()->loadGameState;
-    cb.log_game_state = &GGPO::get_singleton()->logGameState;
-    cb.save_game_state = &GGPO::get_singleton()->saveGameState;
-    cb.free_buffer = &GGPO::get_singleton()->freeBuffer;
-    cb.on_event = &GGPO::get_singleton()->onEvent;
+    cb.begin_game = &Callbacks::beginGame;
+    cb.advance_frame = &Callbacks::advanceFrame;
+    cb.load_game_state = &Callbacks::loadGameState;
+    cb.log_game_state = &Callbacks::logGameState;
+    cb.save_game_state = &Callbacks::saveGameState;
+    cb.free_buffer = &Callbacks::freeBuffer;
+    cb.on_event = &Callbacks::onEvent;
 
     GGPOSession* ggpo;
     if(ggpo_start_session(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort) != GGPO::OK) {
@@ -47,17 +38,16 @@ void GGPO::start_session(const String &game, int numPlayers, int localPort) {
     GGPO::set_ggpoptr(ggpo);
 }
 
-void GGPO::start_spectating(const String &game, int numPlayers, int localPort, const String &hostIp, int hostPort) {
+void GGPO::start_spectating(const String& game, int numPlayers, int localPort, const String& hostIp, int hostPort) {
     GGPOSessionCallbacks cb;
 
-    memset(&cb, 0, sizeof(cb));
-    cb.begin_game = beginGame;
-    cb.advance_frame = advanceFrame;
-    cb.load_game_state = loadGameState;
-    cb.log_game_state = logGameState;
-    cb.save_game_state = saveGameState;
-    cb.free_buffer = freeBuffer;
-    cb.on_event = onEvent;
+    cb.begin_game = &Callbacks::beginGame;
+    cb.advance_frame = &Callbacks::advanceFrame;
+    cb.load_game_state = &Callbacks::loadGameState;
+    cb.log_game_state = &Callbacks::logGameState;
+    cb.save_game_state = &Callbacks::saveGameState;
+    cb.free_buffer = &Callbacks::freeBuffer;
+    cb.on_event = &Callbacks::onEvent;
 
     GGPOSession* ggpo;
     if(ggpo_start_spectating(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort, hostIp.utf8().ptrw(), hostPort) != GGPO::OK) {
@@ -101,7 +91,7 @@ void GGPO::idle(int timeout) {
     }
 }
 
-void GGPO::add_player(int playerType, int playerNum, const String &playerIpAddress, int playerPort, int pHandle) {
+void GGPO::add_player(int playerType, int playerNum, const String& playerIpAddress, int playerPort, int pHandle) {
     GGPOPlayer player;
 
     player.size = sizeof(GGPOPlayer);
@@ -133,7 +123,7 @@ void GGPO::advance_frame() {
     }
 }
 
-void GGPO::log(const String &text) {
+void GGPO::log(const String& text) {
     ggpo_log(GGPO::get_ggpoptr(), text.utf8().get_data());
 }
 
@@ -152,7 +142,7 @@ Dictionary GGPO::get_network_stats(int pHandle) {
     return d;
 }
 
-int fletcher32_checksum(short *data, size_t len) {
+int fletcher32_checksum(short* data, size_t len) {
     int sum1 = 0xffff, sum2 = 0xffff;
     while(len) {
         size_t tlen = len > 360 ? 360 : len;
@@ -170,74 +160,69 @@ int fletcher32_checksum(short *data, size_t len) {
     return sum2 << 16 | sum1;
 }
 
-/*
- * Some of those callbacks below should be connected to
- * GDScript methods so we can redefine them, especially
- * the ones that interact with the game state.
- */
-bool GGPO::beginGame(const char *game) {
+bool Callbacks::beginGame(const char* game) {
     return true;
 }
 
-bool GGPO::advanceFrame(int flags) {
-    Object::emit_signal("on_advance_frame");
+bool Callbacks::advanceFrame(int flags) {
+    GGPO::get_singleton()->emit_signal("advance_frame");
     return true;
 }
 
-bool GGPO::loadGameState(unsigned char *buffer, int length) {
-    Object::emit_signal("on_load_game_state", buffer, length);
+bool Callbacks::loadGameState(unsigned char* buffer, int length) {
+    GGPO::get_singleton()->emit_signal("load_game_state", buffer, length);
     return true;
 }
 
-bool GGPO::logGameState(char *filename, unsigned char *buffer, int length) {
-    Object::emit_signal("on_log_game_state", filename, buffer);
+bool Callbacks::logGameState(char* filename, unsigned char* buffer, int length) {
+    GGPO::get_singleton()->emit_signal("log_game_state", filename, buffer);
     return true;
 }
 
-bool GGPO::saveGameState(unsigned char **buffer, int *len, int *checksum, int frame) {
-    Object::emit_signal("on_save_game_state", buffer, len, checksum);
+bool Callbacks::saveGameState(unsigned char** buffer, int* len, int* checksum, int frame) {
+    GGPO::get_singleton()->emit_signal("save_game_state", buffer, len, checksum);
     return true;
 }
 
-void GGPO::freeBuffer(void *buffer) {
+void Callbacks::freeBuffer(void* buffer) {
     free(buffer);
 }
 
-bool GGPO::onEvent(GGPOEvent *info) {
+bool Callbacks::onEvent(GGPOEvent* info) {
     switch(info->code) {
         case GGPO::EVENTCODE_CONNECTED_TO_PEER:
             player = info->u.connected.player;
-            Object::emit_signal("on_event_connected_to_peer", player);
+            GGPO::get_singleton()->emit_signal("event_connected_to_peer", player);
             break;
         case GGPO::EVENTCODE_SYNCHRONIZING_WITH_PEER:
             player = info->u.synchronizing.player;
             count = info->u.synchronizing.count;
             total = info->u.synchronizing.total;
-            Object::emit_signal("on_event_synchronizing_with_peer", player, count, total);
+            GGPO::get_singleton()->emit_signal("event_synchronizing_with_peer", player, count, total);
             break;
         case GGPO::EVENTCODE_SYNCHRONIZED_WITH_PEER:
             player = info->u.synchronized.player;
-            Object::emit_signal("on_event_synchronized_with_peer", player);
+            GGPO::get_singleton()->emit_signal("event_synchronized_with_peer", player);
             break;
         case GGPO::EVENTCODE_RUNNING:
-            Object::emit_signal("on_event_running");
+            GGPO::get_singleton()->emit_signal("event_running");
             break;
         case GGPO::EVENTCODE_DISCONNECTED_FROM_PEER:
             player = info->u.disconnected.player;
-            Object::emit_signal("on_event_disconnected_from_peer", player);
+            GGPO::get_singleton()->emit_signal("event_disconnected_from_peer", player);
             break;
         case GGPO::EVENTCODE_TIMESYNC:
             frames_ahead = info->u.timesync.frames_ahead;
-            Object::emit_signal("on_event_timesync", frames_ahead);
+            GGPO::get_singleton()->emit_signal("event_timesync", frames_ahead);
             break;
         case GGPO::EVENTCODE_CONNECTION_INTERRUPTED:
             player = info->u.connection_interrupted.player;
             disconnect_timeout = info->u.connection_interrupted.disconnect_timeout;
-            Object::emit_signal("on_event_connection_interrupted", player, disconnect_timeout);
+            GGPO::get_singleton()->emit_signal("event_connection_interrupted", player, disconnect_timeout);
             break;
         case GGPO::EVENTCODE_CONNECTION_RESUMED:
             player = info->u.connection_resumed.player;
-            Object::emit_signal("on_event_connection_resumed", player);
+            GGPO::get_singleton()->emit_signal("event_connection_resumed", player);
             break;
     }
 
@@ -260,18 +245,18 @@ void GGPO::_bind_methods() {
     ClassDB::bind_method(D_METHOD("log", "text"), &GGPO::log);
     ClassDB::bind_method(D_METHOD("get_network_stats", "pHandle"), &GGPO::get_network_stats);
 
-    ADD_SIGNAL(MethodInfo("on_advance_frame"));
-    ADD_SIGNAL(MethodInfo("on_load_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "length")));
-    ADD_SIGNAL(MethodInfo("on_log_game_state", PropertyInfo(Variant::STRING, "filename"), PropertyInfo(Variant::OBJECT, "buffer")));
-    ADD_SIGNAL(MethodInfo("on_save_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "len"), PropertyInfo(Variant::INT, "checksum")));
-    ADD_SIGNAL(MethodInfo("on_event_connected_to_peer", PropertyInfo(Variant::INT, "player")));
-    ADD_SIGNAL(MethodInfo("on_event_synchronizing_with_peer", PropertyInfo(Variant::INT, "player"), PropertyInfo(Variant::INT, "count"), PropertyInfo(Variant::INT, "total")));
-    ADD_SIGNAL(MethodInfo("on_event_synchronized_with_peer", PropertyInfo(Variant::INT, "player")));
-    ADD_SIGNAL(MethodInfo("on_event_running"));
-    ADD_SIGNAL(MethodInfo("on_event_disconnected_from_peer", PropertyInfo(Variant::INT, "player")));
-    ADD_SIGNAL(MethodInfo("on_event_timesync", PropertyInfo(Variant::INT, "frames_ahead")));
-    ADD_SIGNAL(MethodInfo("on_event_connection_interrupted", PropertyInfo(Variant::INT, "player"), PropertyInfo(Variant::INT, "disconnect_timeout")));
-    ADD_SIGNAL(MethodInfo("on_event_connection_resumed", PropertyInfo(Variant::INT, "player")));
+    ADD_SIGNAL(MethodInfo("advance_frame"));
+    ADD_SIGNAL(MethodInfo("load_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "length")));
+    ADD_SIGNAL(MethodInfo("log_game_state", PropertyInfo(Variant::STRING, "filename"), PropertyInfo(Variant::OBJECT, "buffer")));
+    ADD_SIGNAL(MethodInfo("save_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "len"), PropertyInfo(Variant::INT, "checksum")));
+    ADD_SIGNAL(MethodInfo("event_connected_to_peer", PropertyInfo(Variant::INT, "player")));
+    ADD_SIGNAL(MethodInfo("event_synchronizing_with_peer", PropertyInfo(Variant::INT, "player"), PropertyInfo(Variant::INT, "count"), PropertyInfo(Variant::INT, "total")));
+    ADD_SIGNAL(MethodInfo("event_synchronized_with_peer", PropertyInfo(Variant::INT, "player")));
+    ADD_SIGNAL(MethodInfo("event_running"));
+    ADD_SIGNAL(MethodInfo("event_disconnected_from_peer", PropertyInfo(Variant::INT, "player")));
+    ADD_SIGNAL(MethodInfo("event_timesync", PropertyInfo(Variant::INT, "frames_ahead")));
+    ADD_SIGNAL(MethodInfo("event_connection_interrupted", PropertyInfo(Variant::INT, "player"), PropertyInfo(Variant::INT, "disconnect_timeout")));
+    ADD_SIGNAL(MethodInfo("event_connection_resumed", PropertyInfo(Variant::INT, "player")));
 
     BIND_CONSTANT(PLAYERTYPE_LOCAL);
     BIND_CONSTANT(PLAYERTYPE_REMOTE);
