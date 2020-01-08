@@ -19,7 +19,7 @@ GGPO* GGPO::get_singleton() {
     return GGPO::singleton;
 }
 
-void GGPO::start_session(const String& game, int numPlayers, int localPort) {
+int GGPO::start_session(const String& game, int numPlayers, int localPort) {
     GGPOSessionCallbacks cb;
 
     cb.begin_game = &Callbacks::beginGame;
@@ -31,14 +31,12 @@ void GGPO::start_session(const String& game, int numPlayers, int localPort) {
     cb.on_event = &Callbacks::onEvent;
 
     GGPOSession* ggpo;
-    if(ggpo_start_session(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort) != GGPO::OK) {
-        return;
-    }
-
+    auto result = ggpo_start_session(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort);
     GGPO::set_ggpoptr(ggpo);
+    return result;
 }
 
-void GGPO::start_spectating(const String& game, int numPlayers, int localPort, const String& hostIp, int hostPort) {
+int GGPO::start_spectating(const String& game, int numPlayers, int localPort, const String& hostIp, int hostPort) {
     GGPOSessionCallbacks cb;
 
     cb.begin_game = &Callbacks::beginGame;
@@ -50,48 +48,35 @@ void GGPO::start_spectating(const String& game, int numPlayers, int localPort, c
     cb.on_event = &Callbacks::onEvent;
 
     GGPOSession* ggpo;
-    if(ggpo_start_spectating(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort, hostIp.utf8().ptrw(), hostPort) != GGPO::OK) {
-        return;
-    }
+    auto result = ggpo_start_spectating(&ggpo, &cb, game.utf8().get_data(), numPlayers, sizeof(uint64_t), localPort, hostIp.utf8().ptrw(), hostPort);
+    return result;
 }
 
 void GGPO::set_disconnect_notify_start(int timeout) {
-    if(ggpo_set_disconnect_notify_start(GGPO::get_ggpoptr(), timeout) != GGPO::OK) {
-        return;
-    }
+    ggpo_set_disconnect_notify_start(GGPO::get_ggpoptr(), timeout);
 }
 
 void GGPO::set_disconnect_timeout(int timeout) {
-    if(ggpo_set_disconnect_timeout(GGPO::get_ggpoptr(), timeout) != GGPO::OK) {
-        return;
-    }
+    ggpo_set_disconnect_timeout(GGPO::get_ggpoptr(), timeout);
 }
 
-void GGPO::synchronize_input(int inputs, int length, int disconnectFlags) {
-    if(ggpo_synchronize_input(GGPO::get_ggpoptr(), &inputs, sizeof(uint64_t) * length, &disconnectFlags) != GGPO::OK) {
-        return;
-    }
+int GGPO::synchronize_input(int inputs, int length, int disconnectFlags) {
+    return ggpo_synchronize_input(GGPO::get_ggpoptr(), &inputs, sizeof(uint64_t) * length, &disconnectFlags);
 }
 
-void GGPO::add_local_input(int localPlayerHandle, uint64_t input) {
-    if(ggpo_add_local_input(GGPO::get_ggpoptr(), localPlayerHandle, &input, sizeof(uint64_t)) != GGPO::OK) {
-        return;
-    }
+int GGPO::add_local_input(int localPlayerHandle, uint64_t input) {
+    return ggpo_add_local_input(GGPO::get_ggpoptr(), localPlayerHandle, &input, sizeof(uint64_t));
 }
 
 void GGPO::close_session() {
-    if(ggpo_close_session(GGPO::get_ggpoptr()) != GGPO::OK) {
-        return;
-    }
+    ggpo_close_session(GGPO::get_ggpoptr());
 }
 
 void GGPO::idle(int timeout) {
-    if(ggpo_idle(GGPO::get_ggpoptr(), timeout) != GGPO::OK) {
-        return;
-    }
+    ggpo_idle(GGPO::get_ggpoptr(), timeout);
 }
 
-void GGPO::add_player(int playerType, int playerNum, const String& playerIpAddress, int playerPort, int pHandle) {
+int GGPO::add_player(int playerType, int playerNum, const String& playerIpAddress, int playerPort, int pHandle) {
     GGPOPlayer player;
 
     player.size = sizeof(GGPOPlayer);
@@ -100,27 +85,19 @@ void GGPO::add_player(int playerType, int playerNum, const String& playerIpAddre
     strcpy_s(player.u.remote.ip_address, playerIpAddress.utf8().get_data());
     player.u.remote.port = playerPort;
 
-    if(ggpo_add_player(GGPO::get_ggpoptr(), &player, &pHandle) != GGPO::OK) {
-        return;
-    }
+    return ggpo_add_player(GGPO::get_ggpoptr(), &player, &pHandle);
 }
 
-void GGPO::disconnect_player(int pHandle) {
-    if(ggpo_disconnect_player(GGPO::get_ggpoptr(), pHandle) != GGPO::OK) {
-        return;
-    }
+int GGPO::disconnect_player(int pHandle) {
+    return ggpo_disconnect_player(GGPO::get_ggpoptr(), pHandle);
 }
 
 void GGPO::set_frame_delay(int pHandle, int frameDelay) {
-    if(ggpo_set_frame_delay(GGPO::get_ggpoptr(), pHandle, frameDelay) != GGPO::OK) {
-        return;
-    }
+    ggpo_set_frame_delay(GGPO::get_ggpoptr(), pHandle, frameDelay);
 }
 
 void GGPO::advance_frame() {
-    if(ggpo_advance_frame(GGPO::get_ggpoptr()) != GGPO::OK) {
-        return;
-    }
+    ggpo_advance_frame(GGPO::get_ggpoptr());
 }
 
 void GGPO::log(const String& text) {
@@ -180,7 +157,8 @@ bool Callbacks::logGameState(char* filename, unsigned char* buffer, int length) 
 }
 
 bool Callbacks::saveGameState(unsigned char** buffer, int* len, int* checksum, int frame) {
-    GGPO::get_singleton()->emit_signal("save_game_state", buffer, len, checksum);
+    GGPO::get_singleton()->emit_signal("save_game_state", buffer, len);
+    *checksum = fletcher32_checksum((short*)*buffer, *len / 2);
     return true;
 }
 
@@ -248,7 +226,7 @@ void GGPO::_bind_methods() {
     ADD_SIGNAL(MethodInfo("advance_frame"));
     ADD_SIGNAL(MethodInfo("load_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "length")));
     ADD_SIGNAL(MethodInfo("log_game_state", PropertyInfo(Variant::STRING, "filename"), PropertyInfo(Variant::OBJECT, "buffer")));
-    ADD_SIGNAL(MethodInfo("save_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "len"), PropertyInfo(Variant::INT, "checksum")));
+    ADD_SIGNAL(MethodInfo("save_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "len")));
     ADD_SIGNAL(MethodInfo("event_connected_to_peer", PropertyInfo(Variant::INT, "player")));
     ADD_SIGNAL(MethodInfo("event_synchronizing_with_peer", PropertyInfo(Variant::INT, "player"), PropertyInfo(Variant::INT, "count"), PropertyInfo(Variant::INT, "total")));
     ADD_SIGNAL(MethodInfo("event_synchronized_with_peer", PropertyInfo(Variant::INT, "player")));

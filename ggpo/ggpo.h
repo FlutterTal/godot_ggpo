@@ -26,16 +26,16 @@ public:
     GGPO();
     ~GGPO();
 
-    void start_session(const String& game, int numPlayers, int localPort);
-    void start_spectating(const String& game, int numPlayers, int localPort, const String& hostIp, int hostPort);
+    int start_session(const String& game, int numPlayers, int localPort);
+    int start_spectating(const String& game, int numPlayers, int localPort, const String& hostIp, int hostPort);
     void set_disconnect_notify_start(int timeout);
     void set_disconnect_timeout(int timeout);
-    void synchronize_input(int inputs, int length, int disconnectFlags);
-    void add_local_input(int localPlayerHandle, uint64_t input);
+    int synchronize_input(int inputs, int length, int disconnectFlags);
+    int add_local_input(int localPlayerHandle, uint64_t input);
     void close_session();
     void idle(int timeout);
-    void add_player(int playerType, int playerNum, const String& playerIpAddress, int playerPort, int pHandle);
-    void disconnect_player(int pHandle);
+    int add_player(int playerType, int playerNum, const String& playerIpAddress, int playerPort, int pHandle);
+    int disconnect_player(int pHandle);
     void set_frame_delay(int pHandle, int frameDelay);
     void advance_frame();
     void log(const String& text);
