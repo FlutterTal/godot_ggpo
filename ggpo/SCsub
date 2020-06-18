@@ -1,8 +1,0 @@
-# SCsub
-
-Import('env')
-Import('env_modules')
-
-env_ggpo = env_modules.Clone()
-
-env_ggpo.add_source_files(env.modules_sources, "*.cpp")
