@@ -11,6 +11,8 @@
 #define MAX_PREDICTION_FRAMES 8
 #define MAX_SPECTATORS 32
 
+#define INVALID_HANDLE (-1)
+
 GGPO* GGPO::singleton = NULL;
 
 GGPO::GGPO() {
@@ -42,6 +44,25 @@ int GGPO::startSession(const String& game, int numPlayers, int localPort) {
     GGPO::set_ggpoptr(ggpo);
     return result;
 }
+// Used to begin a new GGPO.net sync test session. During a sync test, every frame of execution is run twice: once in prediction mode and once again to verify the result of the prediction. If the checksums of your save states do not match, the test is aborted.
+int GGPO::startSynctest(const String& game, int numPlayers, int frames) {
+    GGPOSessionCallbacks cb;
+
+    cb.begin_game = &Callbacks::begin_game;
+    cb.advance_frame = &Callbacks::advance_frame;
+    cb.load_game_state = &Callbacks::load_game_state;
+    cb.log_game_state = &Callbacks::log_game_state;
+    cb.save_game_state = &Callbacks::save_game_state;
+    cb.free_buffer = &Callbacks::free_buffer;
+    cb.on_event = &Callbacks::on_event;
+
+    GGPOSession* ggpo;
+    char gameTab[128];
+    strcpy(gameTab, game.utf8().get_data());
+    auto result = ggpo_start_synctest(&ggpo, &cb, gameTab, numPlayers, sizeof(uint64_t), frames);
+    GGPO::set_ggpoptr(ggpo);
+    return result;
+}
 // Start a spectator session.
 int GGPO::startSpectating(const String& game, int numPlayers, int localPort, const String& hostIp, int hostPort) {
     GGPOSessionCallbacks cb;
@@ -69,9 +90,16 @@ int GGPO::setDisconnectTimeout(int timeout) {
     return ggpo_set_disconnect_timeout(GGPO::get_ggpoptr(), timeout);
 }
 // You should call ggpo_synchronize_input before every frame of execution, including those frames which happen during rollback.
-int GGPO::synchronizeInput(Array inputs, int length) {
+Dictionary GGPO::synchronizeInput(Array inputs, int length) {
     int disconnectFlags = 0;
-    return ggpo_synchronize_input(GGPO::get_ggpoptr(), &inputs, sizeof(uint64_t) * length, &disconnectFlags);
+    Dictionary d;
+
+    auto result = ggpo_synchronize_input(GGPO::get_ggpoptr(), &inputs, sizeof(uint64_t) * length, &disconnectFlags);
+    d["result"] = result;
+    if(result == ERRORCODE_SUCCESS)
+        d["disconnectFlags"] = disconnectFlags;
+    
+    return d;
 }
 // Used to notify GGPO.net of inputs that should be transmitted to remote players. ggpo_add_local_input must be called once every frame for all player of type GGPO_PLAYERTYPE_LOCAL.
 int GGPO::addLocalInput(int playerHandle, int input) {
@@ -98,6 +126,7 @@ Dictionary GGPO::addPlayer(int playerType, int playerNum, const String& playerIp
 
     int playerHandle = 0;
     auto result = ggpo_add_player(GGPO::get_ggpoptr(), &player, &playerHandle);
+    d["result"] = result;
     if(result == ERRORCODE_SUCCESS) {
         d["playerHandle"] = playerHandle;
         d["type"] = player.type;
@@ -129,7 +158,9 @@ Dictionary GGPO::getNetworkStats(int playerHandle) {
     GGPONetworkStats stats;
     Dictionary d;
 
-    if(ggpo_get_network_stats(GGPO::get_ggpoptr(), playerHandle, &stats) == ERRORCODE_SUCCESS) {
+    auto result = ggpo_get_network_stats(GGPO::get_ggpoptr(), playerHandle, &stats);
+    d["result"] = result;
+    if(result == ERRORCODE_SUCCESS) {
         d["sendQueueLen"] = stats.network.send_queue_len;
         d["recvQueueLen"] = stats.network.send_queue_len;
         d["ping"] = stats.network.ping;
@@ -169,7 +200,7 @@ bool Callbacks::advance_frame(int flags) {
 }
 
 bool Callbacks::load_game_state(unsigned char* buffer, int len) {
-    GGPO::get_singleton()->emit_signal("load_game_state", buffer, len);
+    GGPO::get_singleton()->emit_signal("load_game_state", buffer);
     return true;
 }
 
@@ -179,7 +210,11 @@ bool Callbacks::log_game_state(char* filename, unsigned char* buffer, int len) {
 }
 
 bool Callbacks::save_game_state(unsigned char** buffer, int* len, int* checksum, int frame) {
-    GGPO::get_singleton()->emit_signal("save_game_state", buffer, len);
+    *buffer = (unsigned char*)malloc(*len);
+    if(!*buffer)
+        return false;
+    
+    GGPO::get_singleton()->emit_signal("save_game_state", *buffer);
     *checksum = fletcher32_checksum((short*)*buffer, *len / 2);
     return true;
 }
@@ -240,6 +275,7 @@ bool Callbacks::on_event(GGPOEvent* info) {
 
 void GGPO::_bind_methods() {
     ClassDB::bind_method(D_METHOD("startSession", "game", "numPlayers", "localPort"), &GGPO::startSession);
+    ClassDB::bind_method(D_METHOD("startSynctest", "game", "numPlayers", "frames"), &GGPO::startSynctest);
     ClassDB::bind_method(D_METHOD("startSpectating", "game", "numPlayers", "localPort", "hostIp", "hostPort"), &GGPO::startSpectating);
     ClassDB::bind_method(D_METHOD("setDisconnectNotifyStart", "timeout"), &GGPO::setDisconnectNotifyStart);
     ClassDB::bind_method(D_METHOD("setDisconnectTimeout", "timeout"), &GGPO::setDisconnectTimeout);
@@ -247,7 +283,7 @@ void GGPO::_bind_methods() {
     ClassDB::bind_method(D_METHOD("addLocalInput", "localPlayerHandle", "input"), &GGPO::addLocalInput);
     ClassDB::bind_method(D_METHOD("closeSession"), &GGPO::closeSession);
     ClassDB::bind_method(D_METHOD("idle", "timeout"), &GGPO::idle);
-    ClassDB::bind_method(D_METHOD("addPlayer", "playerType", "playerNum", "playerIpAddress", "playerPort"), &GGPO::addPlayer);
+    ClassDB::bind_method(D_METHOD("addPlayer", "playerType", "playerNum", "playerIpAddress", "playerPort"), &GGPO::addPlayer, DEFVAL(""), DEFVAL(0));
     ClassDB::bind_method(D_METHOD("disconnectPlayer", "playerHandle"), &GGPO::disconnectPlayer);
     ClassDB::bind_method(D_METHOD("setFrameDelay", "playerHandle", "frameDelay"), &GGPO::setFrameDelay);
     ClassDB::bind_method(D_METHOD("advanceFrame"), &GGPO::advanceFrame);
@@ -255,9 +291,9 @@ void GGPO::_bind_methods() {
     ClassDB::bind_method(D_METHOD("getNetworkStats", "playerHandle"), &GGPO::getNetworkStats);
 
     ADD_SIGNAL(MethodInfo("advance_frame"));
-    ADD_SIGNAL(MethodInfo("load_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "len")));
-    ADD_SIGNAL(MethodInfo("log_game_state", PropertyInfo(Variant::STRING, "filename"), PropertyInfo(Variant::OBJECT, "buffer")));
-    ADD_SIGNAL(MethodInfo("save_game_state", PropertyInfo(Variant::OBJECT, "buffer"), PropertyInfo(Variant::INT, "len")));
+    ADD_SIGNAL(MethodInfo("load_game_state", PropertyInfo(Variant::POOL_BYTE_ARRAY, "buffer")));
+    ADD_SIGNAL(MethodInfo("log_game_state", PropertyInfo(Variant::STRING, "filename"), PropertyInfo(Variant::POOL_BYTE_ARRAY, "buffer")));
+    ADD_SIGNAL(MethodInfo("save_game_state", PropertyInfo(Variant::POOL_BYTE_ARRAY, "buffer")));
     ADD_SIGNAL(MethodInfo("event_connected_to_peer", PropertyInfo(Variant::INT, "player")));
     ADD_SIGNAL(MethodInfo("event_synchronizing_with_peer", PropertyInfo(Variant::INT, "player"), PropertyInfo(Variant::INT, "count"), PropertyInfo(Variant::INT, "total")));
     ADD_SIGNAL(MethodInfo("event_synchronized_with_peer", PropertyInfo(Variant::INT, "player")));
@@ -273,7 +309,6 @@ void GGPO::_bind_methods() {
     BIND_CONSTANT(MAX_PLAYERS);
     BIND_CONSTANT(MAX_PREDICTION_FRAMES);
     BIND_CONSTANT(MAX_SPECTATORS);
-    BIND_CONSTANT(OK);
     BIND_CONSTANT(INVALID_HANDLE);
     BIND_CONSTANT(ERRORCODE_SUCCESS);
     BIND_CONSTANT(ERRORCODE_GENERAL_FAILURE);
