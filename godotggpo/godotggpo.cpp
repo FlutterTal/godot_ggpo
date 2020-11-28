@@ -214,7 +214,7 @@ bool Callbacks::save_game_state(unsigned char** buffer, int* len, int* checksum,
     if(!*buffer)
         return false;
     
-    GGPO::get_singleton()->emit_signal("save_game_state", *buffer);
+    GGPO::get_singleton()->emit_signal("save_game_state");
     *checksum = fletcher32_checksum((short*)*buffer, *len / 2);
     return true;
 }
@@ -293,7 +293,7 @@ void GGPO::_bind_methods() {
     ADD_SIGNAL(MethodInfo("advance_frame"));
     ADD_SIGNAL(MethodInfo("load_game_state", PropertyInfo(Variant::POOL_BYTE_ARRAY, "buffer")));
     ADD_SIGNAL(MethodInfo("log_game_state", PropertyInfo(Variant::STRING, "filename"), PropertyInfo(Variant::POOL_BYTE_ARRAY, "buffer")));
-    ADD_SIGNAL(MethodInfo("save_game_state", PropertyInfo(Variant::POOL_BYTE_ARRAY, "buffer")));
+    ADD_SIGNAL(MethodInfo("save_game_state"));
     ADD_SIGNAL(MethodInfo("event_connected_to_peer", PropertyInfo(Variant::INT, "player")));
     ADD_SIGNAL(MethodInfo("event_synchronizing_with_peer", PropertyInfo(Variant::INT, "player"), PropertyInfo(Variant::INT, "count"), PropertyInfo(Variant::INT, "total")));
     ADD_SIGNAL(MethodInfo("event_synchronized_with_peer", PropertyInfo(Variant::INT, "player")));
