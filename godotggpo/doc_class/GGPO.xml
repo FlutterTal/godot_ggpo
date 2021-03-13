@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GGPO" inherits="Object" category="Core" version="1.0.0">
+    <brief_description>
+        A custom module in C++ to implement GGPO to Godot Engine.
+    </brief_description>
+    <description>
+        Traditional techniques account for network transmission time by adding delay to a players input, resulting in a sluggish, laggy game-feel. Rollback networking uses input prediction and speculative execution to send player inputs to the game immediately, providing the illusion of a zero-latency network. Using rollback, the same timings, reactions, visual and audio queues, and muscle memory your players build up playing offline will translate directly online. The GGPO networking SDK is designed to make incorporating rollback networking into new and existing games as easy as possible.
+
+        For more information about the history of GGPO, check out http://ggpo.net/
+    </description>
+    <tutorials>
+    </tutorials>
+    <methods>
+        <method name="addLocalInput">
+            <return type="int">
+            </return>
+            <argument index="0" name="localPlayerHandle" type="int">
+            </argument>
+            <argument index="1" name="input" type="int">
+            </argument>
+            <description>
+                Notifies GGPO.net that it should transmit inputs to remote players.
+                This method must be called once every frame for all player of type [code]PLAYERTYPE_LOCAL[/code].
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="addPlayer">
+            <return type="Dictionary">
+            </return>
+            <argument index="0" name="playerType" type="int">
+            </argument>
+            <argument index="1" name="playerNum" type="int">
+            </argument>
+            <argument index="2" name="playerIpAddress" type="String">
+            </argument>
+            <argument index="3" name="playerPort" type="int">
+            </argument>
+            <description>
+                Adds a new player to the session. You must call this method as many times as the number of players you want in the session (e.g. in a 3 player session, this must be called 3 times).
+                The [code]playerIpAddress[/code] and [code]playerPort[/code] arguments are only useful if [code]playerType[/code] is type [code]PLAYERTYPE_REMOTE[/code]. With that value, if you forget to declare the [code]playerIpAddress[/code] and [code]playerPort[/code] arguments, you may have unexpected results happening.
+                Returns a [Dictionary] containing the following:
+                [*] [code]result[/code]: The error code of the method;
+                [*] [code]playerType[/code]: The type of the player;
+                [*] [code]playerNum[/code]: The number of the player;
+                [*] [code]playerIpAddress[/code]: The IP address of the remote player;
+                [*] [code]playerPort[/code]: The port of the remote player;
+                [*] [code]playerHandle[/code]: The handle of the player. This will be the variable you'd want to use on the different methods that interact with the player.
+            </description>
+        </method>
+        <method name="advanceFrame">
+            <return type="int">
+            </return>
+            <description>
+                Notifies GGPO.net that you have advanced your gamestate by a single frame.
+                You should call this every time you advance the gamestate by a frame, even during rollbacks. GGPO.net may call the [code]save_game_state[/code] signal before [code]advanceFrame[/code] returns.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="closeSession">
+            <return type="int">
+            </return>
+            <description>
+                Closes a GGPO.net session.
+                You must call [code]closeSession[/code] to free the resources allocated in [code]startSession[/code]. Failing to do so will result in memory leak.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="disconnectPlayer">
+            <return type="int">
+            </return>
+            <argument index="0" name="playerHandle" type="int">
+            </argument>
+            <description>
+                Disconnects a remote player from a game.
+                Note that a disconnected player won't be removed from the session. If you want to do it, you must close the current session and create a new one.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="getNetworkStats">
+            <return type="Dictionary">
+            </return>
+            <argument index="0" name="playerHandle" type="int">
+            </argument>
+            <description>
+                Fetches some statistics about the quality of the network connection.
+                Returns a [Dictionary] containing the following:
+                [*] [code]result[/code]: The error code of the method;
+                [*] [code]sendQueueLen[/code]: The length of the queue containing UDP packets which have not yet been acknowledged by the end client;
+                [*] [code]recvQueueLen[/code]: The number of inputs currently buffered by the GGPO.net network layer which have yet to be validated;
+                [*] [code]ping[/code]: The roundtrip packet transmission time as calculated by GGPO.net;
+                [*] [code]kbpsSent[/code]: The estimated bandwidth used between the two clients, in kilobits per second;
+                [*] [code]localFramesBehind[/code]: The number of frames GGPO.net calculates that the local client is behind the remote client at this instant in time;
+                [*] [code]remoteFramesBehind[/code]: The same as [code]localFramesBehind[/code], but calculated from the perspective of the remote player.
+            </description>
+        </method>
+        <method name="idle">
+            <return type="int">
+            </return>
+            <argument index="0" name="timeout" type="int">
+            </argument>
+            <description>
+                Gives GGPO.net a chance to do some work.
+                This should be called periodically by your application. Most packet transmissions and rollbacks occur in the [code]idle[/code] method.
+                Return the error code of the execution.
+            </desctiption>
+        </method>
+        <method name="log">
+            <return type="void">
+            </return>
+            <argument index="0" name="text" type="String">
+            </argument>
+            <description>
+                Write the [code]text[/code] to the GGPO.net log.
+            </description>
+        </method>
+        <method name="setDisconnectNotifyStart">
+            <return type="int">
+            </return>
+            <argument index="0" name="timeout" type="int">
+            </argument>
+            <description>
+                Sets the time to wait before GGPO.net send the [code]event_connection_interrupted[/code] signal.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="setDisconnectTimeout">
+            <return type="int">
+            </return>
+            <argument index="0" name="timeout" type="int">
+            </argument>
+            <description>
+                Sets the disconnect timeout.
+                The session will automatically disconnect from a remote peer if it has not received a packet in the timeout window. GGPO.net will notify you of the disconnect via the [code]event_disconnected_from_peer[/code] signal.
+                Note that setting the [code]timeout[/code] value of 0 will disable automatic disconnects.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="setFrameDelay">
+            <return type="int">
+            </return>
+            <argument index="0" name="playerHandle" type="int">
+            </argument>
+            <argument index="1" name="frameDelay" type="int">
+            </argument>
+            <description>
+                Changes the amount of frames GGPO.net will delay local input.
+                You must call [code]setFrameDelay[/code] before the first call to [code]synchronize_input[/code].
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="startSession">
+            <return type="int">
+            </return>
+            <argument index="0" name="game" type="String">
+            </argument>
+            <argument index="1" name="numPlayers" type="int">
+            </argument>
+            <argument index="2" name="localPort" type="int">
+            </argument>
+            <description>
+                Begins a new GGPO.net session.
+                You must first call any methods from the [code]start[/code] family before using all the remaining methods. Failing to do so will result in some errors.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="startSpectating">
+            <return type="int">
+            </return>
+            <argument index="0" name="game" type="String">
+            </argument>
+            <argument index="1" name="numPlayers" type="int">
+            </argument>
+            <argument index="2" name="localPort" type="int">
+            </argument>
+            <argument index="3" name="hostIp" type="String">
+            </argument>
+            <argument index="4" name="hostPort" type="int">
+            </argument>
+            <description>
+                Starts a spectator session.
+                You must first call any methods from the [code]start[/code] family before using all the remaining methods. Failing to do so will result in some errors.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="startSynctest">
+            <return type="int">
+            </return>
+            <argument index="0" name="game" type="String">
+            </argument>
+            <argument index="1" name="numPlayers" type="int">
+            </argument>
+            <argument index="2" name="frames" type="int">
+            </argument>
+            <description>
+                Begins a new GGPO.net sync test session.
+                During a sync test, GGPO.net runs every frame of execution twice: once in prediction mode, and once again to verify the result of the prediction. If the checksums of your save states do not match, the test is aborted.
+                You must first call any methods from the [code]start[/code] family before using all the remaining methods. Failing to do so will result in some errors.
+                Returns the error code of the execution.
+            </description>
+        </method>
+        <method name="synchronizeInput">
+            <return type="Dictionary">
+            </return>
+            <argument index="0" name="inputs" type="Array">
+            </argument>
+            <argument index="1" name="length" type="int">
+            </argument>
+            <description>
+                Synchronizes the inputs for all the remote players in the session.
+                You should call [code]synchronizeInput[/code] before every frame of execution, including those frames which happen during rollback.
+                Returns a [Dictionary] containing the following:
+                [*] [code]result[/code]: The error code of the method;
+                [*] [code]disconnectFlags[/code]: The power-of-2 variable in the [code]2^i[/code] form that indicates whether the input in slot [code]i[/code] is valid. If a player has disconnected, GGPO.net will zero the input in the [code]inputs[/code] array for that player and set the i-th flag.
+            </description>
+        </method>
+    </methods>
+    <signals>
+        <signal name="advance_frame">
+            <description>
+                Called during a rollback.
+                You should advance your game state by exactly one frame. Before each frame, call [code]synchronizeInput[/code] to retrieve the inputs you should use for that frame. After each frame, you should call [code]advanceFrame[/code] to notify GGPO.net that you did the job.
+            </description>
+        </signal>
+        <signal name="event_connected_to_peer">
+            <argument index="0" name="player" type="int">
+            </argument>
+            <description>
+                Notifies that the player completed the handshake with the game running on the other side of the network.
+            </description>
+        </signal>
+        <signal name="event_connection_interrupted">
+            <argument index="0" name="player" type="int">
+            </argument>
+            <argument index="1" name="disconnect_timeout" type="int">
+            </argument>
+            <description>
+                Notifies that the timeout set from the [code]setDisconnectNotifyStart[/code] is elapsed.
+            </description>
+        </signal>
+        <signal name="event_connection_resumed">
+            <argument index="0" name="player" type="int">
+            </argument>
+            <description>
+                Notifies that the session succeeded on recovering the [code]player[/code]'s connection before they disconnect.
+            </description>
+        </signal>
+        <signal name="event_running">
+            <description>
+                Notifies that the session synchronized all the clients.
+                You may begin sending inputs with [code]synchronizeInput[/code].
+            </description>
+        </signal>
+        <signal name="event_synchronized_with_peer">
+            <argument index="0" name="player" type="int">
+            </argument>
+            <description>
+                Notifies that the [code]player[/code] synchronized with this peer.
+            </description>
+        </signal>
+        <signal name="event_synchronizing_with_peer">
+            <argument index="0" name="player" type="int">
+            </argument>
+            <argument index="1" name="count" type="int">
+            </argument>
+            <argument index="2" name="total" type="int">
+            </argument>
+            <description>
+                Notifies that the [code]player[/code] has started the synchronization process with the client on the other end of the networking.
+                The [code]count[/code] and [code]total[/code] fields indicate progress.
+            </description>
+        </signal>
+        <signal name="event_timesync">
+            <argument index="0" name="frames_ahead" type="int">
+            </argument>
+            <description>
+                Notifies that the time synchronization code has determined this client is too far ahead of the other one and should slow downto ensure fairness.
+                The [code]frames_ahead[/code] field indicates how many frames the client is.
+            </description>
+        </signal>
+        <signal name="load_game_state">
+            <argument index="0" name="buffer" type="PoolByteArray">
+            </argument>
+            <description>
+                Called at the beginning of a rollback.
+                The [code]buffer[/code] parameter contains a previously saved state returned from the [code]save_game_state[/code] signal.
+            </description>
+        </signal>
+        <signal name="log_game_state">
+            <argument index="0" name="filename" type="String">
+            </argument>
+            <argument index="1" name="buffer" type="PoolByteArray">
+            </argument>
+            <description>
+                Called during diagnostic testing.
+                The client should use the [code]log[/code] method to write the contents of the specified save state in a human readable form.
+            </description>
+        </signal>
+        <signal name="save_game_state">
+            <description>
+                Called periodically during the session.
+            </description>
+        </signal>
+    </signals>
+    <constants>
+        <constant name="PLAYERTYPE_LOCAL" value="0">
+        </constant>
+        <constant name="PLAYERTYPE_REMOTE" value="1">
+        </constant>
+        <constant name="PLAYERTYPE_SPECTATOR" value="2">
+        </constant>
+        <constant name="MAX_PLAYERS" value="4">
+        </constant>
+        <constant name="MAX_PREDICTION_FRAMES" value="8">
+        </constant>
+        <constant name="MAX_SPECTATORS" value="32">
+        </constant>
+        <constant name="INVALID_HANDLE" value="-1">
+        </constant>
+        <constant name="ERRORCODE_SUCCESS" value="0">
+        </constant>
+        <constant name="ERRORCODE_GENERAL_FAILURE" value="-1">
+        </constant>
+        <constant name="ERRORCODE_INVALID_SESSION" value="1">
+        </constant>
+        <constant name="ERRORCODE_INVALID_PLAYER_HANDLE" value="2">
+        </constant>
+        <constant name="ERRORCODE_PLAYER_OUT_OF_RANGE" value="3">
+        </constant>
+        <constant name="ERRORCODE_PREDICTION_THRESHOLD" value="4">
+        </constant>
+        <constant name="ERRORCODE_UNSUPPORTED" value="5">
+        </constant>
+        <constant name="ERRORCODE_NOT_SYNCHRONIZED" value="6">
+        </constant>
+        <constant name="ERRORCODE_IN_ROLLBACK" value="7">
+        </constant>
+        <constant name="ERRORCODE_INPUT_DROPPED" value="8">
+        </constant>
+        <constant name="ERRORCODE_PLAYER_DISCONNECTED" value="9">
+        </constant>
+        <constant name="ERRORCODE_TOO_MANY_SPECTATORS" value="10">
+        </constant>
+        <constant name="ERRORCODE_INVALID_REQUEST" value="11">
+        </constant>
+        <constant name="EVENTCODE_CONNECTED_TO_PEER" value="1000">
+        </constant>
+        <constant name="EVENTCODE_SYNCHRONIZING_WITH_PEER" value="1001">
+        </constant>
+        <constant name="EVENTCODE_SYNCHRONIZED_WITH_PEER" value="1002">
+        </constant>
+        <constant name="EVENTCODE_RUNNING" value="1003">
+        </constant>
+        <constant name="EVENTCODE_DISCONNECTED_FROM_PEER" value="1004">
+        </constant>
+        <constant name="EVENTCODE_TIMESYNC" value="1005">
+        </constant>
+        <constant name="EVENTCODE_CONNECTION_INTERRUPTED" value="1006">
+        </constant>
+        <constant name="EVENTCODE_CONNECTION_RESUMED" value="1007">
+        </constant>
+    </constants>
+</class>

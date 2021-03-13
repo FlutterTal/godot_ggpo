@@ -121,8 +121,10 @@ Dictionary GGPO::addPlayer(int playerType, int playerNum, const String& playerIp
     player.size = sizeof(GGPOPlayer);
     player.type = (GGPOPlayerType)playerType;
     player.player_num = playerNum;
-    strcpy(player.u.remote.ip_address, playerIpAddress.utf8().get_data());
-    player.u.remote.port = playerPort;
+    if(player.type == PLAYERTYPE_REMOTE) {
+        strcpy(player.u.remote.ip_address, playerIpAddress.utf8().get_data());
+        player.u.remote.port = playerPort;
+    }
 
     int playerHandle = 0;
     auto result = ggpo_add_player(GGPO::get_ggpoptr(), &player, &playerHandle);
@@ -131,8 +133,10 @@ Dictionary GGPO::addPlayer(int playerType, int playerNum, const String& playerIp
         d["playerHandle"] = playerHandle;
         d["type"] = player.type;
         d["playerNum"] = player.player_num;
-        d["ipAddress"] = player.u.remote.ip_address;
-        d["port"] = player.u.remote.port;
+        if(player.type == PLAYERTYPE_REMOTE) {
+            d["ipAddress"] = player.u.remote.ip_address;
+            d["port"] = player.u.remote.port;
+        }
     }
     
     return d;

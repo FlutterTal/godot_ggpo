@@ -11,3 +11,11 @@ def configure(env):
         else:
             env.Append(LIBS=["ggpo"])
             env.Append(LIBPATH=["#modules/godotggpo/sdk/bin"])
+
+def get_doc_classes():
+    return [
+        "GGPO",
+    ]
+
+def get_doc_path():
+    return "doc_class"
